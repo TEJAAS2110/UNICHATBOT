@@ -424,7 +424,7 @@ class AdvancedAIManager:
         
         "Gemini": {
             "provider": "google", 
-            "model": "gemini-2.5-flash",
+            "model": "gemini-1.5-flash",
             "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
@@ -1225,5 +1225,6 @@ if __name__ == "__main__":
         if st.checkbox("🔍 Show Debug Info"):
 
             st.exception(e)
+
 
 
