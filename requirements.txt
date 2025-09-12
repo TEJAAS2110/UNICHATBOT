@@ -1,0 +1,29 @@
+# Core Streamlit
+streamlit==1.28.0
+python-dotenv==1.0.0
+
+# AI APIs  
+google-generativeai==0.3.2
+groq==0.4.2
+openai==1.3.5
+
+# Audio Processing (Optional - may need special handling)
+SpeechRecognition==3.10.0
+gTTS==2.4.0
+# pyaudio==0.2.13  # Uncomment if you can install it
+
+# Image Processing
+Pillow==10.1.0
+requests==2.31.0
+
+# Data & Analytics
+pandas==2.1.4
+plotly==5.17.0
+numpy==1.25.2
+
+# Streamlit Extensions (Optional)
+# streamlit-chat==0.1.1  # Uncomment if available
+# streamlit-extras==0.3.5  # Uncomment if available
+
+# Utilities
+matplotlib==3.8.2
