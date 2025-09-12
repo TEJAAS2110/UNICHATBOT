@@ -1,9 +1,8 @@
 """
 UniChat - Next-Gen Multi-Model AI Assistant
 Created for: Next-Gen Multi-Model AI Chatbot Hackathon (GEA-6)
-Author: [Your Name]
-Date: 2024
-License: MIT
+Author: TEJAS.M.SURVE
+Date: 12/09/2025
 
 This is an original implementation created from scratch during the hackathon.
 Features: Multi-model chat, image generation, vision analysis, voice input, and more!
@@ -1233,3 +1232,4 @@ if __name__ == "__main__":
         if st.checkbox("🔍 Show Debug Info"):
 
             st.exception(e)
+
