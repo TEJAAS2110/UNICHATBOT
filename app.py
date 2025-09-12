@@ -422,6 +422,12 @@ class AdvancedAIManager:
     """Enhanced AI model management with better error handling"""
     
     model_info = {
+                "GPT-4o": {
+            "provider": "openai",
+            "model": "gpt-4o",
+            "capabilities": ["text"],
+            "max_tokens": 8192
+        },
 
 
         "Gemini Flash": {
@@ -430,12 +436,7 @@ class AdvancedAIManager:
             "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
-        "GPT-4o": {
-            "provider": "openai",
-            "model": "gpt-4o",
-            "capabilities": ["text"],
-            "max_tokens": 8192
-        },
+
         "GPT-3.5 Turbo": {
             "provider": "openai",
             "model": "gpt-3.5-turbo",
@@ -1230,4 +1231,5 @@ if __name__ == "__main__":
         
         # Debug info for development
         if st.checkbox("🔍 Show Debug Info"):
+
             st.exception(e)
