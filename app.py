@@ -421,17 +421,16 @@ class AdvancedAIManager:
     """Enhanced AI model management with better error handling"""
     
     model_info = {
-                "GPT-4o": {
-            "provider": "openai",
-            "model": "gpt-4o",
-            "capabilities": ["text"],
+        
+        "Gemini": {
+            "provider": "google", 
+            "model": "gemini-2.5-flash",
+            "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
-
-
-        "Gemini Flash": {
-            "provider": "google", 
-            "model": "gemini-1.5-flash",
+         "GPT-4o": {
+            "provider": "openai",
+            "model": "gpt-4o",
             "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
@@ -443,16 +442,10 @@ class AdvancedAIManager:
             "max_tokens": 4096
         },
 
-        "Llama 3.1 8B": {
+        "Groq": {
             "provider": "groq",
             "model": "llama-3.1-8b-instant",
-            "capabilities": ["text"],
-            "max_tokens": 8192
-        },
-        "Groq Chat": {
-            "provider": "groq",
-            "model": "llama-3.1-8b-instant",
-            "capabilities": ["text"],
+            "capabilities": ["text" "vision", "multimodal"],
             "max_tokens": 4096
         }
 
@@ -1232,4 +1225,5 @@ if __name__ == "__main__":
         if st.checkbox("🔍 Show Debug Info"):
 
             st.exception(e)
+
 
