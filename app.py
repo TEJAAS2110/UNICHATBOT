@@ -567,11 +567,10 @@ def handle_voice_input():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**Option 1: Upload Audio File**")
+        st.markdown()
         uploaded_audio = st.file_uploader(
-            "Upload your voice recording",
-            type=['wav', 'mp3', 'flac', 'm4a', 'ogg'],
-            help="Record on your phone/computer and upload here"
+            
+            type=[],
         )
         
         if uploaded_audio is not None:
@@ -606,8 +605,8 @@ def handle_voice_input():
                         st.info("💡 Try uploading a clear WAV or MP3 file")
     
     with col2:
-        st.markdown("**Option 2: Quick Text Input**")
-        st.info("Or simply type your message in the text box below")
+        st.markdown()
+        st.info()
         
 
 # -----------------------------
