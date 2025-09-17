@@ -259,29 +259,22 @@ except Exception as e:
 # -----------------------------
 # 🎤 CLOUD-COMPATIBLE Voice System
 # -----------------------------
-class CloudVoiceManager:
-    """Handle voice input and text-to-speech for cloud deployment"""
-    
-    @staticmethod
-    def get_audio_status():
-        """Get current audio capabilities status"""
-        status = {
-            "speech_recognition": SPEECH_AVAILABLE,
-            "pyaudio": PYAUDIO_AVAILABLE,
-            "tts": TTS_AVAILABLE
-        }
-        return status
+# -----------------------------
+# 🎤 FIXED Voice Input System
+# -----------------------------
+class VoiceManager:
+    """Handle voice input and text-to-speech - FIXED VERSION"""
     
     @staticmethod
     def speech_to_text():
-        """Convert speech to text with cloud compatibility"""
-        if not SPEECH_AVAILABLE:
-            return "Speech recognition not available in cloud deployment"
-        
-        if not PYAUDIO_AVAILABLE:
-            return "Microphone access not available on Streamlit Cloud. Voice input works locally."
-        
+        """Convert speech to text using speech_recognition"""
         try:
+            # Check if PyAudio is available
+            try:
+                import pyaudio
+            except ImportError:
+                return "Voice input requires PyAudio. Works locally but not on Streamlit Cloud."
+            
             r = sr.Recognizer()
             with sr.Microphone() as source:
                 st.info("🎤 Listening... Speak now!")
@@ -1201,4 +1194,5 @@ if __name__ == "__main__":
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
+
 
