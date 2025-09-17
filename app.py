@@ -269,12 +269,6 @@ class VoiceManager:
     def speech_to_text():
         """Convert speech to text using speech_recognition"""
         try:
-            # Check if PyAudio is available
-            try:
-                import pyaudio
-            except ImportError:
-                return "Voice input requires PyAudio. Works locally but not on Streamlit Cloud."
-            
             r = sr.Recognizer()
             with sr.Microphone() as source:
                 st.info("🎤 Listening... Speak now!")
@@ -625,29 +619,6 @@ def handle_voice_input():
 # -----------------------------
 # Deployment Status Display
 # -----------------------------
-def show_deployment_status():
-    """Show current deployment status and capabilities"""
-    if not st.session_state.deployment_warnings_shown:
-        audio_status = {"speech_recognition": SPEECH_AVAILABLE, "pyaudio": PYAUDIO_AVAILABLE, "tts": TTS_AVAILABLE}
-        
-        # Show deployment notice
-        status_items = []
-        if not audio_status["pyaudio"]:
-            status_items.append("🎤 Voice input available locally only")
-        if audio_status["tts"]:
-            status_items.append("🔊 Text-to-speech available")
-        if audio_status["speech_recognition"]:
-            status_items.append("📝 Speech recognition available")
-        
-        if status_items:
-            st.markdown(f"""
-            <div class="deployment-notice">
-                <strong>🌐 Deployment Status:</strong><br>
-                {"<br>".join(status_items)}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.session_state.deployment_warnings_shown = True
 
 # -----------------------------
 # 🎯 Main Application
@@ -662,7 +633,6 @@ def main():
     
     apply_professional_theme()
     initialize_advanced_session()
-    show_deployment_status()
     
     # Header
     st.markdown("""
