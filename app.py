@@ -257,9 +257,6 @@ except Exception as e:
     st.error(f"Failed to initialize OpenAI: {e}")
 
 # -----------------------------
-# 🎤 CLOUD-COMPATIBLE Voice System
-# -----------------------------
-# -----------------------------
 # 🎤 FIXED Voice Input System
 # -----------------------------
 class VoiceManager:
@@ -267,24 +264,20 @@ class VoiceManager:
     
     @staticmethod
     def speech_to_text():
-        """Convert speech to text using speech_recognition"""
+        """This method is now handled by file upload"""
+        return "Use file upload for voice input on cloud deployment"
+    
+    @staticmethod
+    def process_audio_file(audio_file_path):
+        """Process uploaded audio file to text"""
         try:
-            # Check if PyAudio is available
-            try:
-                import pyaudio
-            except ImportError:
-                return "Voice input not available on cloud deployment"
-            
             r = sr.Recognizer()
-            with sr.Microphone() as source:
-                st.info("Listening... Speak now!")
-                r.adjust_for_ambient_noise(source, duration=1)
-                audio = r.listen(source, timeout=10, phrase_time_limit=10)
-                
+            with sr.AudioFile(audio_file_path) as source:
+                audio = r.record(source)
             text = r.recognize_google(audio)
             return text
         except Exception as e:
-            return f"Voice input error: {str(e)}"
+            return f"❌ Audio processing error: {str(e)}"
     
     @staticmethod
     def text_to_speech(text):
@@ -567,25 +560,63 @@ def display_chat_messages():
 # Cloud-Compatible Voice Input
 # -----------------------------
 def handle_voice_input():
-    """Handle voice input with simple error handling"""
-    if st.button("🎤 Voice Input", key="voice_btn"):
-        if not SPEECH_AVAILABLE:
-            st.error("Speech recognition not available")
-            return
+    """Handle voice input with cloud-compatible file upload"""
+    st.markdown("### 🎤 Voice Input")
+    
+    # Two options for voice input
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Option 1: Upload Audio File**")
+        uploaded_audio = st.file_uploader(
+            "Upload your voice recording",
+            type=['wav', 'mp3', 'flac', 'm4a', 'ogg'],
+            help="Record on your phone/computer and upload here"
+        )
         
-        try:
-            text = VoiceManager.speech_to_text()
+        if uploaded_audio is not None:
+            st.audio(uploaded_audio, format='audio/wav')
             
-            if text and not text.startswith("❌") and not text.startswith("⏱️"):
-                st.session_state.captured_voice_text = text
-                st.session_state.voice_inputs += 1
-                st.success(f"Voice captured: {text}")
-                st.rerun()
-            else:
-                st.error(text)
-                
-        except Exception as e:
-            st.error(f"Voice input error: {str(e)}")
+            if st.button("🔍 Convert Audio to Text"):
+                with st.spinner("Processing audio..."):
+                    try:
+                        # Save uploaded file temporarily
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+                            tmp_file.write(uploaded_audio.getvalue())
+                            temp_path = tmp_file.name
+                        
+                        # Use speech recognition on uploaded file
+                        r = sr.Recognizer()
+                        with sr.AudioFile(temp_path) as source:
+                            audio = r.record(source)
+                        
+                        text = r.recognize_google(audio)
+                        
+                        if text:
+                            st.session_state.captured_voice_text = text
+                            st.session_state.voice_inputs += 1
+                            st.success(f"✅ Audio converted: {text}")
+                            st.rerun()
+                        
+                        # Clean up temp file
+                        os.unlink(temp_path)
+                        
+                    except Exception as e:
+                        st.error(f"❌ Audio processing error: {str(e)}")
+                        st.info("💡 Try uploading a clear WAV or MP3 file")
+    
+    with col2:
+        st.markdown("**Option 2: Quick Text Input**")
+        st.info("Or simply type your message in the text box below")
+        
+        # Instructions for recording
+        st.markdown("""
+        **📱 How to record audio:**
+        1. Use your phone's voice recorder
+        2. Record your message clearly
+        3. Save as MP3/WAV format
+        4. Upload using the button above
+        """)
 # -----------------------------
 # Deployment Status Display
 # -----------------------------
