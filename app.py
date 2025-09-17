@@ -533,28 +533,53 @@ def display_chat_messages():
 # FIXED: Voice Input Handler
 # -----------------------------
 def handle_voice_input():
-    """Handle voice input with proper persistence - FIXED"""
+    """Handle voice input with better error handling"""
     if st.button("🎤 Voice Input", key="voice_btn"):
+        # Check if speech recognition is available
         if not SPEECH_AVAILABLE:
-            st.error("Speech recognition not available. Install: pip install speechrecognition pyaudio")
+            st.error("🚫 Speech recognition not available on this deployment")
+            st.info("💡 Try typing your message or test locally with: pip install speechrecognition pyaudio")
             return
-            
-        st.session_state.processing_voice = True
         
-        with st.spinner("Listening..."):
-            voice_text = VoiceManager.speech_to_text()
+        # Check browser compatibility
+        st.info("🔍 Checking microphone access...")
+        
+        try:
+            import speech_recognition as sr
+            r = sr.Recognizer()
             
-            if voice_text and not voice_text.startswith("❌") and not voice_text.startswith("⏱️"):
-                # FIXED: Store voice text properly and persist it
-                st.session_state.captured_voice_text = voice_text
-                st.session_state.voice_inputs += 1
-                st.success(f"Voice captured: {voice_text}")
-                st.session_state.processing_voice = False
-                st.rerun()
-            else:
-                st.error("Voice capture failed")
-                st.session_state.processing_voice = False
-
+            # Test microphone availability
+            try:
+                with sr.Microphone() as source:
+                    st.success("✅ Microphone detected!")
+                    st.info("🎤 Listening... Speak now!")
+                    r.adjust_for_ambient_noise(source, duration=1)
+                    audio = r.listen(source, timeout=8, phrase_time_limit=6)
+                
+                st.info("🔍 Processing speech...")
+                text = r.recognize_google(audio)
+                
+                if text:
+                    st.session_state.captured_voice_text = text
+                    st.session_state.voice_inputs += 1
+                    st.success(f"✅ Voice captured: {text}")
+                    st.rerun()
+                else:
+                    st.error("❌ No speech detected")
+                    
+            except sr.RequestError as e:
+                st.error(f"🌐 Internet connection issue: {e}")
+                st.info("💡 Voice recognition requires internet connection")
+            except sr.UnknownValueError:
+                st.error("❌ Could not understand speech")
+                st.info("💡 Try speaking more clearly")
+            except Exception as e:
+                st.error(f"🎤 Microphone error: {str(e)}")
+                st.info("💡 Please check microphone permissions in browser settings")
+                
+        except ImportError:
+            st.error("📦 Required packages not installed")
+            st.info("💡 Contact admin to install speech recognition dependencies")
 # -----------------------------
 # 🎯 FIXED Main Application
 # -----------------------------
