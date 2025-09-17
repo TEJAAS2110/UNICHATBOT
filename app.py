@@ -575,7 +575,7 @@ def display_chat_messages():
 # -----------------------------
 def handle_cloud_voice_input():
     """Handle voice input with cloud deployment compatibility"""
-    audio_status = VoiceManager.get_audio_status()
+    audio_status = {"speech_recognition": SPEECH_AVAILABLE, "pyaudio": PYAUDIO_AVAILABLE, "tts": TTS_AVAILABLE}
     
     # Voice input button with status indication
     if audio_status["pyaudio"]:
@@ -617,7 +617,7 @@ def handle_cloud_voice_input():
 def show_deployment_status():
     """Show current deployment status and capabilities"""
     if not st.session_state.deployment_warnings_shown:
-        audio_status = VoiceManager.get_audio_status()
+        audio_status = {"speech_recognition": SPEECH_AVAILABLE, "pyaudio": PYAUDIO_AVAILABLE, "tts": TTS_AVAILABLE}
         
         # Show deployment notice
         status_items = []
@@ -714,7 +714,7 @@ def main():
             st.rerun()
         
         # Audio Status
-        audio_status = VoiceManager.get_audio_status()
+        audio_status = {"speech_recognition": SPEECH_AVAILABLE, "pyaudio": PYAUDIO_AVAILABLE, "tts": TTS_AVAILABLE}
         st.markdown("### 🎵 Audio Status")
         st.write(f"🎤 Speech Recognition: {'✅' if audio_status['speech_recognition'] else '❌'}")
         st.write(f"🔊 Text-to-Speech: {'✅' if audio_status['tts'] else '❌'}")
