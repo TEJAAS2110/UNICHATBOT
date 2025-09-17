@@ -573,43 +573,54 @@ def display_chat_messages():
 # -----------------------------
 # Cloud-Compatible Voice Input
 # -----------------------------
-def handle_cloud_voice_input():
-    """Handle voice input with cloud deployment compatibility"""
-    audio_status = {"speech_recognition": SPEECH_AVAILABLE, "pyaudio": PYAUDIO_AVAILABLE, "tts": TTS_AVAILABLE}
-    
-    # Voice input button with status indication
-    if audio_status["pyaudio"]:
-        button_text = "🎤 Voice Input"
-        status_indicator = "status-online"
-    else:
-        button_text = "🎤 Voice Input (Local Only)"
-        status_indicator = "status-warning"
-    
-    if st.button(button_text, key="voice_btn"):
-        if not audio_status["speech_recognition"]:
-            st.error("🚫 Speech recognition not available")
-            st.info("💡 Install speechrecognition package for voice features")
+def handle_voice_input():
+    """Handle voice input with better error handling"""
+    if st.button("🎤 Voice Input", key="voice_btn"):
+        # Check if speech recognition is available
+        if not SPEECH_AVAILABLE:
+            st.error("🚫 Speech recognition not available on this deployment")
+            st.info("💡 Try typing your message or test locally with: pip install speechrecognition pyaudio")
             return
         
-        if not audio_status["pyaudio"]:
-            st.warning("⚠️ Voice input only works in local environment")
-            st.info("🌐 Streamlit Cloud doesn't support microphone access. Try typing or run locally.")
-            return
+        # Check browser compatibility
+        st.info("🔍 Checking microphone access...")
         
         try:
-            with st.spinner("🎤 Processing voice input..."):
-                text = VoiceManager.speech_to_text()
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            
+            # Test microphone availability
+            try:
+                with sr.Microphone() as source:
+                    st.success("✅ Microphone detected!")
+                    st.info("🎤 Listening... Speak now!")
+                    r.adjust_for_ambient_noise(source, duration=1)
+                    audio = r.listen(source, timeout=8, phrase_time_limit=6)
                 
-            if text and not text.startswith("❌") and not text.startswith("⏱️"):
-                st.session_state.captured_voice_text = text
-                st.session_state.voice_inputs += 1
-                st.success(f"✅ Voice captured: {text}")
-                st.rerun()
-            else:
-                st.error(text)
+                st.info("🔍 Processing speech...")
+                text = r.recognize_google(audio)
                 
-        except Exception as e:
-            st.error(f"🎤 Voice input error: {str(e)}")
+                if text:
+                    st.session_state.captured_voice_text = text
+                    st.session_state.voice_inputs += 1
+                    st.success(f"✅ Voice captured: {text}")
+                    st.rerun()
+                else:
+                    st.error("❌ No speech detected")
+                    
+            except sr.RequestError as e:
+                st.error(f"🌐 Internet connection issue: {e}")
+                st.info("💡 Voice recognition requires internet connection")
+            except sr.UnknownValueError:
+                st.error("❌ Could not understand speech")
+                st.info("💡 Try speaking more clearly")
+            except Exception as e:
+                st.error(f"🎤 Microphone error: {str(e)}")
+                st.info("💡 Please check microphone permissions in browser settings")
+                
+        except ImportError:
+            st.error("📦 Required packages not installed")
+            st.info("💡 Contact admin to install speech recognition dependencies")
 
 # -----------------------------
 # Deployment Status Display
@@ -701,7 +712,7 @@ def main():
         
         col1, col2 = st.columns(2)
         with col1:
-            handle_cloud_voice_input()
+            handle_voice_input()
         
         with col2:
             if st.button("💾 Export Chat"):
