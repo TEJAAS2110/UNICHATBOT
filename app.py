@@ -609,14 +609,6 @@ def handle_voice_input():
         st.markdown("**Option 2: Quick Text Input**")
         st.info("Or simply type your message in the text box below")
         
-        # Instructions for recording
-        st.markdown("""
-        **📱 How to record audio:**
-        1. Use your phone's voice recorder
-        2. Record your message clearly
-        3. Save as MP3/WAV format
-        4. Upload using the button above
-        """)
 # -----------------------------
 # Deployment Status Display
 # -----------------------------
