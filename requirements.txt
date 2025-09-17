@@ -11,6 +11,3 @@ pandas
 numpy
 plotly
 httpx
-portaudio19-dev
-python3-pyaudio
-
