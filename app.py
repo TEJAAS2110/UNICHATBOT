@@ -570,7 +570,7 @@ def handle_voice_input():
         st.markdown()
         uploaded_audio = st.file_uploader(
             
-            type=[],
+            type=['wav', 'mp3', 'flac', 'm4a', 'ogg'],
         )
         
         if uploaded_audio is not None:
@@ -1162,6 +1162,7 @@ if __name__ == "__main__":
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
+
 
 
 
