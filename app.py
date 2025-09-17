@@ -1,11 +1,14 @@
 """
-UniChat - Next-Gen Multi-Model AI Assistant
+UniChat - Next-Gen Multi-Model AI Assistant (DEPLOYMENT READY VERSION)
 Created for: Next-Gen Multi-Model AI Chatbot Hackathon (GEA-6)
 Author: TEJAS.M.SURVE
-Date: 12/09/2025
 
-This is an original implementation created from scratch during the hackathon.
-Features: Multi-model chat, image generation, vision analysis, voice input, and more!
+DEPLOYMENT FIXES APPLIED:
+✅ PyAudio made optional for cloud deployment
+✅ Microphone detection with fallback
+✅ Enhanced error handling for missing dependencies
+✅ Cloud-compatible audio processing
+✅ All deployment issues resolved
 """
 
 import streamlit as st
@@ -31,13 +34,22 @@ from openai import OpenAI
 from PIL import Image
 import requests
 
-# Audio processing
+# Audio processing - Made optional for deployment
+SPEECH_AVAILABLE = False
+PYAUDIO_AVAILABLE = False
+
 try:
     import speech_recognition as sr
     SPEECH_AVAILABLE = True
+    # Check for PyAudio separately
+    try:
+        import pyaudio
+        PYAUDIO_AVAILABLE = True
+    except ImportError:
+        PYAUDIO_AVAILABLE = False
+        # Continue with speech_recognition but without microphone
 except ImportError:
     SPEECH_AVAILABLE = False
-    st.warning("Speech recognition not available. Install with: pip install speechrecognition pyaudio")
 
 try:
     from gtts import gTTS
@@ -160,6 +172,16 @@ def apply_professional_theme():
         animation: pulse 2s infinite;
     }
     
+    .status-warning {
+        width: 12px;
+        height: 12px;
+        background: var(--warning);
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+    }
+    
     @keyframes pulse {
         0% { opacity: 1; }
         50% { opacity: 0.5; }
@@ -190,6 +212,16 @@ def apply_professional_theme():
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    
+    /* Deployment status */
+    .deployment-notice {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #744210;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border-left: 4px solid #d69e2e;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -203,35 +235,55 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialize clients
+# Initialize clients with better error handling
 clients = {}
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    clients['gemini'] = genai
 
-if GROQ_API_KEY:
-    try:
+try:
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        clients['gemini'] = genai
+except Exception as e:
+    st.error(f"Failed to initialize Gemini: {e}")
+
+try:
+    if GROQ_API_KEY:
         http_client = httpx.Client(timeout=30)
         clients['groq'] = Groq(api_key=GROQ_API_KEY, http_client=http_client)
-    except Exception as e:
-        st.error(f"⚠️ Failed to initialize Groq client: {e}")
+except Exception as e:
+    st.error(f"Failed to initialize Groq: {e}")
 
-if OPENAI_API_KEY:
-    try:
+try:
+    if OPENAI_API_KEY:
         http_client = httpx.Client(timeout=30)
         clients['openai'] = OpenAI(api_key=OPENAI_API_KEY, http_client=http_client)
-    except Exception as e:
-        st.error(f"⚠️ Failed to initialize OpenAI client: {e}")
+except Exception as e:
+    st.error(f"Failed to initialize OpenAI: {e}")
 
 # -----------------------------
-# 🎤 FIXED Voice Input System
+# 🎤 CLOUD-COMPATIBLE Voice System
 # -----------------------------
-class VoiceManager:
-    """Handle voice input and text-to-speech - FIXED VERSION"""
+class CloudVoiceManager:
+    """Handle voice input and text-to-speech for cloud deployment"""
+    
+    @staticmethod
+    def get_audio_status():
+        """Get current audio capabilities status"""
+        status = {
+            "speech_recognition": SPEECH_AVAILABLE,
+            "pyaudio": PYAUDIO_AVAILABLE,
+            "tts": TTS_AVAILABLE
+        }
+        return status
     
     @staticmethod
     def speech_to_text():
-        """Convert speech to text using speech_recognition"""
+        """Convert speech to text with cloud compatibility"""
+        if not SPEECH_AVAILABLE:
+            return "Speech recognition not available in cloud deployment"
+        
+        if not PYAUDIO_AVAILABLE:
+            return "Microphone access not available on Streamlit Cloud. Voice input works locally."
+        
         try:
             r = sr.Recognizer()
             with sr.Microphone() as source:
@@ -483,10 +535,10 @@ class AdvancedAnalytics:
         return fig
 
 # -----------------------------
-# 💾 FIXED Session Management
+# 💾 Session Management
 # -----------------------------
 def initialize_advanced_session():
-    """Initialize all session state variables - FIXED VERSION"""
+    """Initialize all session state variables"""
     defaults = {
         "messages": [],
         "model_usage": {},
@@ -499,8 +551,9 @@ def initialize_advanced_session():
         "current_model": "Gemini",
         "theme": "professional",
         "input_key": 0,
-        "captured_voice_text": "",  # FIXED: Better voice text storage
-        "processing_voice": False
+        "captured_voice_text": "",
+        "processing_voice": False,
+        "deployment_warnings_shown": False
     }
     
     for key, value in defaults.items():
@@ -508,10 +561,10 @@ def initialize_advanced_session():
             st.session_state[key] = value
 
 # -----------------------------
-# FIXED: Message Display using Native Components Only
+# Message Display System
 # -----------------------------
 def display_chat_messages():
-    """Display chat messages using ONLY Streamlit native components - NO HTML"""
+    """Display chat messages using native Streamlit components"""
     for i, message_data in enumerate(st.session_state.messages):
         role = message_data["role"]
         content = message_data["content"]
@@ -519,69 +572,84 @@ def display_chat_messages():
         timestamp = message_data.get("timestamp", "")
         
         if role == "user":
-            # User message - right aligned using columns
             col1, col2, col3 = st.columns([1, 4, 0.1])
             with col2:
                 st.info(f"**You** ({timestamp})\n\n{content}")
         else:
-            # AI message - left aligned using columns  
             col1, col2, col3 = st.columns([0.1, 4, 1])
             with col2:
                 st.success(f"**{model}** ({timestamp})\n\n{content}")
 
 # -----------------------------
-# FIXED: Voice Input Handler
+# Cloud-Compatible Voice Input
 # -----------------------------
-def handle_voice_input():
-    """Handle voice input with better error handling"""
-    if st.button("🎤 Voice Input", key="voice_btn"):
-        # Check if speech recognition is available
-        if not SPEECH_AVAILABLE:
-            st.error("🚫 Speech recognition not available on this deployment")
-            st.info("💡 Try typing your message or test locally with: pip install speechrecognition pyaudio")
+def handle_cloud_voice_input():
+    """Handle voice input with cloud deployment compatibility"""
+    audio_status = CloudVoiceManager.get_audio_status()
+    
+    # Voice input button with status indication
+    if audio_status["pyaudio"]:
+        button_text = "🎤 Voice Input"
+        status_indicator = "status-online"
+    else:
+        button_text = "🎤 Voice Input (Local Only)"
+        status_indicator = "status-warning"
+    
+    if st.button(button_text, key="voice_btn"):
+        if not audio_status["speech_recognition"]:
+            st.error("🚫 Speech recognition not available")
+            st.info("💡 Install speechrecognition package for voice features")
             return
         
-        # Check browser compatibility
-        st.info("🔍 Checking microphone access...")
+        if not audio_status["pyaudio"]:
+            st.warning("⚠️ Voice input only works in local environment")
+            st.info("🌐 Streamlit Cloud doesn't support microphone access. Try typing or run locally.")
+            return
         
         try:
-            import speech_recognition as sr
-            r = sr.Recognizer()
-            
-            # Test microphone availability
-            try:
-                with sr.Microphone() as source:
-                    st.success("✅ Microphone detected!")
-                    st.info("🎤 Listening... Speak now!")
-                    r.adjust_for_ambient_noise(source, duration=1)
-                    audio = r.listen(source, timeout=8, phrase_time_limit=6)
+            with st.spinner("🎤 Processing voice input..."):
+                text = CloudVoiceManager.speech_to_text()
                 
-                st.info("🔍 Processing speech...")
-                text = r.recognize_google(audio)
+            if text and not text.startswith("❌") and not text.startswith("⏱️"):
+                st.session_state.captured_voice_text = text
+                st.session_state.voice_inputs += 1
+                st.success(f"✅ Voice captured: {text}")
+                st.rerun()
+            else:
+                st.error(text)
                 
-                if text:
-                    st.session_state.captured_voice_text = text
-                    st.session_state.voice_inputs += 1
-                    st.success(f"✅ Voice captured: {text}")
-                    st.rerun()
-                else:
-                    st.error("❌ No speech detected")
-                    
-            except sr.RequestError as e:
-                st.error(f"🌐 Internet connection issue: {e}")
-                st.info("💡 Voice recognition requires internet connection")
-            except sr.UnknownValueError:
-                st.error("❌ Could not understand speech")
-                st.info("💡 Try speaking more clearly")
-            except Exception as e:
-                st.error(f"🎤 Microphone error: {str(e)}")
-                st.info("💡 Please check microphone permissions in browser settings")
-                
-        except ImportError:
-            st.error("📦 Required packages not installed")
-            st.info("💡 Contact admin to install speech recognition dependencies")
+        except Exception as e:
+            st.error(f"🎤 Voice input error: {str(e)}")
+
 # -----------------------------
-# 🎯 FIXED Main Application
+# Deployment Status Display
+# -----------------------------
+def show_deployment_status():
+    """Show current deployment status and capabilities"""
+    if not st.session_state.deployment_warnings_shown:
+        audio_status = CloudVoiceManager.get_audio_status()
+        
+        # Show deployment notice
+        status_items = []
+        if not audio_status["pyaudio"]:
+            status_items.append("🎤 Voice input available locally only")
+        if audio_status["tts"]:
+            status_items.append("🔊 Text-to-speech available")
+        if audio_status["speech_recognition"]:
+            status_items.append("📝 Speech recognition available")
+        
+        if status_items:
+            st.markdown(f"""
+            <div class="deployment-notice">
+                <strong>🌐 Deployment Status:</strong><br>
+                {"<br>".join(status_items)}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.session_state.deployment_warnings_shown = True
+
+# -----------------------------
+# 🎯 Main Application
 # -----------------------------
 def main():
     st.set_page_config(
@@ -593,6 +661,7 @@ def main():
     
     apply_professional_theme()
     initialize_advanced_session()
+    show_deployment_status()
     
     # Header
     st.markdown("""
@@ -605,7 +674,7 @@ def main():
         </p>
         <div style="margin: 1rem 0;">
             <span class="status-online"></span>
-            <span style="color: rgba(255,255,255,0.8);">All Systems Online</span>
+            <span style="color: rgba(255,255,255,0.8);">Cloud Deployment Active</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -618,6 +687,7 @@ def main():
         available_models = AdvancedAIManager.get_available_models()
         if not available_models:
             st.error("⚠️ No AI models available. Please configure API keys.")
+            st.info("💡 Add API keys to environment variables or .env file")
             return
         
         selected_model = st.selectbox(
@@ -631,7 +701,7 @@ def main():
         model_info = AdvancedAIManager.model_info.get(selected_model, {})
         st.info(f"**Provider:** {model_info.get('provider', 'Unknown').title()}")
         
-        # Advanced Settings (REMOVED LANGUAGE SELECTION)
+        # Advanced Settings
         with st.expander("⚙️ Advanced Settings"):
             temperature = st.slider("🌡️ Creativity", 0.0, 1.0, 0.7, 0.1)
             max_tokens = st.number_input("📝 Max Response Length", 100, 4000, 1000)
@@ -641,7 +711,7 @@ def main():
         
         col1, col2 = st.columns(2)
         with col1:
-            handle_voice_input()
+            handle_cloud_voice_input()
         
         with col2:
             if st.button("💾 Export Chat"):
@@ -652,6 +722,13 @@ def main():
             st.session_state.captured_voice_text = ""
             st.session_state.input_key += 1
             st.rerun()
+        
+        # Audio Status
+        audio_status = CloudVoiceManager.get_audio_status()
+        st.markdown("### 🎵 Audio Status")
+        st.write(f"🎤 Speech Recognition: {'✅' if audio_status['speech_recognition'] else '❌'}")
+        st.write(f"🔊 Text-to-Speech: {'✅' if audio_status['tts'] else '❌'}")
+        st.write(f"🎙️ Microphone: {'✅' if audio_status['pyaudio'] else '🌐 Cloud Limited'}")
         
         # Usage Statistics
         st.markdown("### 📊 Session Stats")
@@ -676,16 +753,15 @@ def main():
         # Chat Interface
         st.markdown('<div class="main-container">', unsafe_allow_html=True)
         
-        # Display conversation using native components only
+        # Display conversation
         display_chat_messages()
         
-        # Input section - FIXED
+        # Input section
         st.markdown("---")
         
         col1, col2, col3 = st.columns([6, 1, 1])
         
         with col1:
-            # FIXED: Handle voice input text properly - DON'T clear until after sending
             current_input = ""
             if st.session_state.captured_voice_text:
                 current_input = st.session_state.captured_voice_text
@@ -704,9 +780,8 @@ def main():
         with col3:
             speak_button = st.button("🔊 TTS", use_container_width=True)
         
-        # FIXED: Send message logic with proper voice text handling
+        # Send message logic
         if send_button and user_input and user_input.strip():
-            # Store the input before processing
             message_content = user_input.strip()
             
             # Add user message
@@ -748,7 +823,7 @@ def main():
                 else:
                     st.session_state.model_usage[selected_model] = 1
             
-            # FIXED: Clear input and voice text AFTER successful sending
+            # Clear input and voice text
             st.session_state.captured_voice_text = ""
             st.session_state.input_key += 1
             st.rerun()
@@ -758,11 +833,13 @@ def main():
             last_message = st.session_state.messages[-1]
             if last_message["role"] == "assistant":
                 with st.spinner("🔊 Generating speech..."):
-                    audio_file = VoiceManager.text_to_speech(last_message["content"])
+                    audio_file = CloudVoiceManager.text_to_speech(last_message["content"])
                     if audio_file:
                         with open(audio_file, 'rb') as f:
                             st.audio(f.read(), format='audio/mp3')
                         os.unlink(audio_file)
+                    else:
+                        st.warning("Text-to-speech not available")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -787,7 +864,10 @@ def main():
             image_quality = st.selectbox("💎 Quality", ["standard", "hd"])
             
             if st.button("🎨 Generate Image", use_container_width=True):
-                if image_prompt.strip():
+                if not OPENAI_API_KEY:
+                    st.error("🔑 OpenAI API key required for image generation")
+                    st.info("💡 Add OPENAI_API_KEY to your environment variables")
+                elif image_prompt.strip():
                     with st.spinner("🎨 Creating your masterpiece..."):
                         final_prompt = image_prompt.strip()
                         if enhance_prompt:
@@ -858,7 +938,7 @@ def main():
                     "Analysis Type",
                     [
                         "General Description",
-                        "Object Detection",
+                        "Object Detection", 
                         "Text Extraction (OCR)",
                         "Scene Analysis",
                         "Color Palette",
@@ -962,13 +1042,10 @@ def main():
                 """, unsafe_allow_html=True)
             
             # Charts
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.session_state.model_usage:
-                    fig = AdvancedAnalytics.create_usage_chart(st.session_state.model_usage)
-                    if fig:
-                        st.plotly_chart(fig, use_container_width=True)
+            if st.session_state.model_usage:
+                fig = AdvancedAnalytics.create_usage_chart(st.session_state.model_usage)
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True)
             
             # Detailed Analysis
             st.markdown("### 🔍 Conversation Insights")
@@ -1115,6 +1192,15 @@ if __name__ == "__main__":
     except Exception as e:
         st.error(f"🚨 Application Error: {str(e)}")
         st.info("Please refresh the page or contact support if the issue persists.")
+        
+        # Show deployment help
+        st.markdown("""
+        ### 🛠️ Troubleshooting Tips:
+        1. **API Keys**: Make sure your API keys are properly configured
+        2. **Voice Features**: Work best in local environment
+        3. **Image Generation**: Requires OpenAI API key
+        4. **Refresh**: Try refreshing the page if issues persist
+        """)
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
