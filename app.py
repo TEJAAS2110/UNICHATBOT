@@ -269,16 +269,22 @@ class VoiceManager:
     def speech_to_text():
         """Convert speech to text using speech_recognition"""
         try:
+            # Check if PyAudio is available
+            try:
+                import pyaudio
+            except ImportError:
+                return "Voice input not available on cloud deployment"
+            
             r = sr.Recognizer()
             with sr.Microphone() as source:
-                st.info("🎤 Listening... Speak now!")
+                st.info("Listening... Speak now!")
                 r.adjust_for_ambient_noise(source, duration=1)
                 audio = r.listen(source, timeout=10, phrase_time_limit=10)
                 
             text = r.recognize_google(audio)
             return text
         except Exception as e:
-            return f"❌ Voice input error: {str(e)}"
+            return f"Voice input error: {str(e)}"
     
     @staticmethod
     def text_to_speech(text):
