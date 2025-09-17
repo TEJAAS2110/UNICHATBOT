@@ -5,7 +5,7 @@ Author: TEJAS.M.SURVE
 Date: 12/09/2025
 
 This is an original implementation created from scratch during the hackathon.
-Features: Multi-model chat, image generation, vision analysis, voice input, and more!
+Features: Multi-model chat, image generation, vision analysis, voice input, and more!
 """
 
 import streamlit as st
@@ -32,29 +32,24 @@ from PIL import Image
 import requests
 
 # Audio processing
-import speech_recognition as sr
-from gtts import gTTS
+try:
+    import speech_recognition as sr
+    SPEECH_AVAILABLE = True
+except ImportError:
+    SPEECH_AVAILABLE = False
+    st.warning("Speech recognition not available. Install with: pip install speechrecognition pyaudio")
+
+try:
+    from gtts import gTTS
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
 
 # Data processing
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-
-# Streamlit extensions (install if available, skip if not)
-try:
-    from streamlit_chat import message
-    STREAMLIT_CHAT_AVAILABLE = True
-except ImportError:
-    STREAMLIT_CHAT_AVAILABLE = False
-    
-try:
-    from streamlit_extras.colored_header import colored_header
-    from streamlit_extras.add_vertical_space import add_vertical_space
-    STREAMLIT_EXTRAS_AVAILABLE = True
-except ImportError:
-    STREAMLIT_EXTRAS_AVAILABLE = False
-
 
 # -----------------------------
 # 🎨 Professional Theme System
@@ -97,44 +92,6 @@ def apply_professional_theme():
         padding: 2rem;
         margin: 1rem;
         box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    }
-    
-    /* Professional Chat Bubbles */
-    .user-message {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 18px 18px 4px 18px;
-        margin: 0.5rem 0;
-        margin-left: 20%;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        animation: slideInRight 0.3s ease;
-        position: relative;
-    }
-    
-    .ai-message {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        color: var(--text-primary);
-        padding: 1rem 1.5rem;
-        border-radius: 18px 18px 18px 4px;
-        margin: 0.5rem 0;
-        margin-right: 20%;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        animation: slideInLeft 0.3s ease;
-        border-left: 4px solid var(--primary);
-        position: relative;
-    }
-    
-    .model-badge {
-        position: absolute;
-        top: -8px;
-        right: 10px;
-        background: var(--accent);
-        color: white;
-        padding: 2px 8px;
-        border-radius: 10px;
-        font-size: 0.7em;
-        font-weight: 600;
     }
     
     /* Feature Cards */
@@ -203,36 +160,6 @@ def apply_professional_theme():
         animation: pulse 2s infinite;
     }
     
-    .status-thinking {
-        width: 12px;
-        height: 12px;
-        background: var(--warning);
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
-        animation: pulse 1s infinite;
-    }
-    
-    .status-error {
-        width: 12px;
-        height: 12px;
-        background: var(--error);
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
-    }
-    
-    /* Animations */
-    @keyframes slideInLeft {
-        from { opacity: 0; transform: translateX(-30px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    
-    @keyframes slideInRight {
-        from { opacity: 0; transform: translateX(30px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    
     @keyframes pulse {
         0% { opacity: 1; }
         50% { opacity: 0.5; }
@@ -248,16 +175,8 @@ def apply_professional_theme():
     /* Hide Streamlit elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-  /* header {visibility: hidden;} */
     
     /* Loading Animation */
-    .loading-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 2rem;
-    }
-    
     .loading-spinner {
         width: 40px;
         height: 40px;
@@ -289,48 +208,26 @@ clients = {}
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     clients['gemini'] = genai
-import httpx
 
 if GROQ_API_KEY:
     try:
-        # If you need proxies, configure here
-        # proxies = {
-        #     "http://": "http://127.0.0.1:8080",
-        #     "https://": "http://127.0.0.1:8080",
-        # }
-        # http_client = httpx.Client(proxies=proxies, timeout=30)
-
-        # ✅ Use plain client (no proxies) for smooth run
         http_client = httpx.Client(timeout=30)
-
         clients['groq'] = Groq(api_key=GROQ_API_KEY, http_client=http_client)
     except Exception as e:
         st.error(f"⚠️ Failed to initialize Groq client: {e}")
 
-import httpx
-
 if OPENAI_API_KEY:
     try:
-        # If you need proxies, configure here
-        # proxies = {
-        #     "http://": "http://127.0.0.1:8080",
-        #     "https://": "http://127.0.0.1:8080",
-        # }
-        # http_client = httpx.Client(proxies=proxies, timeout=30)
-
-        # ✅ Use plain client (no proxies) for smooth run
         http_client = httpx.Client(timeout=30)
-
         clients['openai'] = OpenAI(api_key=OPENAI_API_KEY, http_client=http_client)
     except Exception as e:
         st.error(f"⚠️ Failed to initialize OpenAI client: {e}")
 
-
 # -----------------------------
-# 🎤 Voice Input System
+# 🎤 FIXED Voice Input System
 # -----------------------------
 class VoiceManager:
-    """Handle voice input and text-to-speech"""
+    """Handle voice input and text-to-speech - FIXED VERSION"""
     
     @staticmethod
     def speech_to_text():
@@ -354,10 +251,12 @@ class VoiceManager:
             return f"❌ Voice input error: {str(e)}"
     
     @staticmethod
-    def text_to_speech(text, language='en'):
+    def text_to_speech(text):
         """Convert text to speech and return audio file"""
         try:
-            tts = gTTS(text=text, lang=language, slow=False)
+            if not TTS_AVAILABLE:
+                return None
+            tts = gTTS(text=text, lang='en', slow=False)
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
                 tts.save(fp.name)
                 return fp.name
@@ -395,11 +294,6 @@ class ImageGenerator:
             return None, f"OpenAI image generation error: {str(e)}"
     
     @staticmethod
-    def generate_with_stability(prompt):
-        """Placeholder for Stability AI integration"""
-        return None, "Stability AI integration coming soon"
-    
-    @staticmethod
     def enhance_prompt(prompt):
         """Enhance image generation prompts"""
         enhancements = [
@@ -421,34 +315,30 @@ class AdvancedAIManager:
     """Enhanced AI model management with better error handling"""
     
     model_info = {
-        
         "Gemini": {
             "provider": "google", 
             "model": "gemini-1.5-flash",
             "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
-         "GPT-4o": {
+        "GPT-4o": {
             "provider": "openai",
             "model": "gpt-4o",
             "capabilities": ["text", "vision", "multimodal"],
             "max_tokens": 8192
         },
-
         "GPT-3.5 Turbo": {
             "provider": "openai",
             "model": "gpt-3.5-turbo",
             "capabilities": ["text"],
             "max_tokens": 4096
         },
-
         "Groq": {
             "provider": "groq",
             "model": "llama-3.1-8b-instant",
-            "capabilities": ["text" "vision", "multimodal"],
+            "capabilities": ["text"],
             "max_tokens": 4096
         }
-
     }
     
     @staticmethod
@@ -510,7 +400,7 @@ class AdvancedAIManager:
             return f"Error with {model_name}: {str(e)}"
     
     @staticmethod
-    def analyze_image(image, prompt, model_name="Gemini Pro"):
+    def analyze_image(image, prompt, model_name="Gemini"):
         """Analyze image with vision-capable models"""
         try:
             model_info = AdvancedAIManager.model_info.get(model_name)
@@ -591,45 +481,26 @@ class AdvancedAnalytics:
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
         return fig
-    
-    @staticmethod
-    def create_sentiment_chart(sentiment_history):
-        """Create sentiment over time chart"""
-        if not sentiment_history:
-            return None
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            y=sentiment_history,
-            mode='lines+markers',
-            name='Sentiment Score',
-            line=dict(color='#667eea', width=3)
-        ))
-        fig.update_layout(
-            title="Conversation Sentiment Over Time",
-            yaxis_title="Sentiment Score",
-            xaxis_title="Message Number"
-        )
-        return fig
 
 # -----------------------------
-# 💾 Enhanced Session Management
+# 💾 FIXED Session Management
 # -----------------------------
 def initialize_advanced_session():
-    """Initialize all session state variables"""
+    """Initialize all session state variables - FIXED VERSION"""
     defaults = {
         "messages": [],
         "model_usage": {},
         "response_times": [],
-        "sentiment_history": [],
         "favorite_responses": [],
         "conversation_id": hashlib.md5(str(datetime.now()).encode()).hexdigest()[:8],
         "total_tokens_used": 0,
         "images_generated": 0,
         "voice_inputs": 0,
-        "current_model": "Gemini Pro",
+        "current_model": "Gemini",
         "theme": "professional",
-        "language": "en"
+        "input_key": 0,
+        "captured_voice_text": "",  # FIXED: Better voice text storage
+        "processing_voice": False
     }
     
     for key, value in defaults.items():
@@ -637,7 +508,55 @@ def initialize_advanced_session():
             st.session_state[key] = value
 
 # -----------------------------
-# 🎯 Main Application
+# FIXED: Message Display using Native Components Only
+# -----------------------------
+def display_chat_messages():
+    """Display chat messages using ONLY Streamlit native components - NO HTML"""
+    for i, message_data in enumerate(st.session_state.messages):
+        role = message_data["role"]
+        content = message_data["content"]
+        model = message_data.get("model", "Unknown")
+        timestamp = message_data.get("timestamp", "")
+        
+        if role == "user":
+            # User message - right aligned using columns
+            col1, col2, col3 = st.columns([1, 4, 0.1])
+            with col2:
+                st.info(f"**You** ({timestamp})\n\n{content}")
+        else:
+            # AI message - left aligned using columns  
+            col1, col2, col3 = st.columns([0.1, 4, 1])
+            with col2:
+                st.success(f"**{model}** ({timestamp})\n\n{content}")
+
+# -----------------------------
+# FIXED: Voice Input Handler
+# -----------------------------
+def handle_voice_input():
+    """Handle voice input with proper persistence - FIXED"""
+    if st.button("🎤 Voice Input", key="voice_btn"):
+        if not SPEECH_AVAILABLE:
+            st.error("Speech recognition not available. Install: pip install speechrecognition pyaudio")
+            return
+            
+        st.session_state.processing_voice = True
+        
+        with st.spinner("Listening..."):
+            voice_text = VoiceManager.speech_to_text()
+            
+            if voice_text and not voice_text.startswith("❌") and not voice_text.startswith("⏱️"):
+                # FIXED: Store voice text properly and persist it
+                st.session_state.captured_voice_text = voice_text
+                st.session_state.voice_inputs += 1
+                st.success(f"Voice captured: {voice_text}")
+                st.session_state.processing_voice = False
+                st.rerun()
+            else:
+                st.error("Voice capture failed")
+                st.session_state.processing_voice = False
+
+# -----------------------------
+# 🎯 FIXED Main Application
 # -----------------------------
 def main():
     st.set_page_config(
@@ -687,25 +606,17 @@ def main():
         model_info = AdvancedAIManager.model_info.get(selected_model, {})
         st.info(f"**Provider:** {model_info.get('provider', 'Unknown').title()}")
         
-        # Advanced Settings
+        # Advanced Settings (REMOVED LANGUAGE SELECTION)
         with st.expander("⚙️ Advanced Settings"):
             temperature = st.slider("🌡️ Creativity", 0.0, 1.0, 0.7, 0.1)
             max_tokens = st.number_input("📝 Max Response Length", 100, 4000, 1000)
-            language = st.selectbox("🌍 Language", ["en", "es", "fr", "de", "it", "pt"])
-            st.session_state.language = language
         
         # Quick Actions
         st.markdown("### ⚡ Quick Actions")
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🎤 Voice Input"):
-                with st.spinner("Listening..."):
-                    voice_text = VoiceManager.speech_to_text()
-                    if voice_text and not voice_text.startswith("❌") and not voice_text.startswith("⏱️"):
-                        st.session_state.voice_input = voice_text
-                        st.session_state.voice_inputs += 1
-                        st.success(f"Voice captured: {voice_text[:50]}...")
+            handle_voice_input()
         
         with col2:
             if st.button("💾 Export Chat"):
@@ -713,6 +624,8 @@ def main():
         
         if st.button("🗑️ Clear History", type="secondary"):
             st.session_state.messages = []
+            st.session_state.captured_voice_text = ""
+            st.session_state.input_key += 1
             st.rerun()
         
         # Usage Statistics
@@ -722,7 +635,7 @@ def main():
         with col1:
             st.metric("Messages", len(st.session_state.messages))
         with col2:
-            st.metric("Models Used", len(st.session_state.model_usage))
+            st.metric("Voice Inputs", st.session_state.voice_inputs)
         
         if st.session_state.response_times:
             avg_time = sum(st.session_state.response_times) / len(st.session_state.response_times)
@@ -738,48 +651,26 @@ def main():
         # Chat Interface
         st.markdown('<div class="main-container">', unsafe_allow_html=True)
         
-        # Display conversation
-        for i, message_data in enumerate(st.session_state.messages):
-            role = message_data["role"]
-            content = message_data["content"]
-            model = message_data.get("model", "Unknown")
-            timestamp = message_data.get("timestamp", "")
-            
-            if role == "user":
-                st.markdown(f"""
-                <div class="user-message">
-                    {content}
-                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 0.5rem;">
-                        {timestamp}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="ai-message">
-                    <div class="model-badge">{model}</div>
-                    {content}
-                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 0.5rem;">
-                        {timestamp}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+        # Display conversation using native components only
+        display_chat_messages()
         
-        # Input section
+        # Input section - FIXED
+        st.markdown("---")
+        
         col1, col2, col3 = st.columns([6, 1, 1])
         
         with col1:
-            # Check for voice input
-            default_text = ""
-            if "voice_input" in st.session_state:
-                default_text = st.session_state.voice_input
-                del st.session_state.voice_input
+            # FIXED: Handle voice input text properly - DON'T clear until after sending
+            current_input = ""
+            if st.session_state.captured_voice_text:
+                current_input = st.session_state.captured_voice_text
             
             user_input = st.text_area(
                 "💭 Your message...",
-                value=default_text,
+                value=current_input,
                 height=100,
-                placeholder="Type your message or use voice input..."
+                placeholder="Type your message or use voice input...",
+                key=f"main_chat_input_{st.session_state.input_key}"
             )
         
         with col2:
@@ -788,11 +679,15 @@ def main():
         with col3:
             speak_button = st.button("🔊 TTS", use_container_width=True)
         
-        if send_button and user_input.strip():
+        # FIXED: Send message logic with proper voice text handling
+        if send_button and user_input and user_input.strip():
+            # Store the input before processing
+            message_content = user_input.strip()
+            
             # Add user message
             user_message = {
                 "role": "user",
-                "content": user_input.strip(),
+                "content": message_content,
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
                 "model": None
             }
@@ -803,7 +698,7 @@ def main():
                 start_time = time.time()
                 
                 response = AdvancedAIManager.generate_text(
-                    user_input.strip(),
+                    message_content,
                     selected_model,
                     temperature,
                     max_tokens
@@ -828,6 +723,9 @@ def main():
                 else:
                     st.session_state.model_usage[selected_model] = 1
             
+            # FIXED: Clear input and voice text AFTER successful sending
+            st.session_state.captured_voice_text = ""
+            st.session_state.input_key += 1
             st.rerun()
         
         # Text-to-speech for last AI response
@@ -835,14 +733,11 @@ def main():
             last_message = st.session_state.messages[-1]
             if last_message["role"] == "assistant":
                 with st.spinner("🔊 Generating speech..."):
-                    audio_file = VoiceManager.text_to_speech(
-                        last_message["content"], 
-                        st.session_state.language
-                    )
+                    audio_file = VoiceManager.text_to_speech(last_message["content"])
                     if audio_file:
                         with open(audio_file, 'rb') as f:
                             st.audio(f.read(), format='audio/mp3')
-                        os.unlink(audio_file)  # Clean up
+                        os.unlink(audio_file)
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -869,13 +764,11 @@ def main():
             if st.button("🎨 Generate Image", use_container_width=True):
                 if image_prompt.strip():
                     with st.spinner("🎨 Creating your masterpiece..."):
-                        # Enhance prompt if requested
                         final_prompt = image_prompt.strip()
                         if enhance_prompt:
                             final_prompt = ImageGenerator.enhance_prompt(final_prompt)
                             st.info(f"Enhanced prompt: {final_prompt}")
                         
-                        # Generate image
                         image, error_msg = ImageGenerator.generate_with_openai(
                             final_prompt, image_size, image_quality
                         )
@@ -884,7 +777,6 @@ def main():
                             st.success("🎉 Image generated successfully!")
                             st.image(image, caption=final_prompt, use_column_width=True)
                             
-                            # Save to session
                             st.session_state.images_generated += 1
                             
                             # Download button
@@ -903,7 +795,6 @@ def main():
                 else:
                     st.warning("Please enter an image description")
         
-        # Recent generations
         if st.session_state.images_generated > 0:
             st.markdown("### 🖼️ Generation Stats")
             st.metric("Images Created", st.session_state.images_generated)
@@ -929,7 +820,6 @@ def main():
             with col1:
                 st.image(image, caption="Uploaded Image", use_column_width=True)
                 
-                # Image info
                 st.info(f"""
                 **File:** {uploaded_file.name}
                 **Size:** {image.size[0]} x {image.size[1]} pixels
@@ -957,7 +847,6 @@ def main():
                         placeholder="What emotions does this image convey?"
                     )
                 else:
-                    # Pre-defined prompts
                     prompts = {
                         "General Description": "Describe this image in detail, including objects, people, setting, and overall composition.",
                         "Object Detection": "List all the objects you can identify in this image with their locations.",
@@ -967,7 +856,6 @@ def main():
                     }
                     custom_question = prompts.get(analysis_type, "Describe this image.")
                 
-                # Vision model selection
                 vision_models = [model for model in AdvancedAIManager.get_available_models() 
                                if "Gemini" in model]
                 
@@ -1057,21 +945,6 @@ def main():
                     if fig:
                         st.plotly_chart(fig, use_container_width=True)
             
-            with col2:
-                if len(st.session_state.messages) > 2:
-                    # Simple sentiment over time
-                    sentiment_history = []
-                    for i in range(0, len(st.session_state.messages), 2):
-                        subset = st.session_state.messages[max(0, i-5):i+1]
-                        if subset:
-                            temp_analytics = AdvancedAnalytics.analyze_conversation(subset)
-                            sentiment_history.append(temp_analytics.get('sentiment_score', 0))
-                    
-                    if sentiment_history:
-                        fig = AdvancedAnalytics.create_sentiment_chart(sentiment_history)
-                        if fig:
-                            st.plotly_chart(fig, use_container_width=True)
-            
             # Detailed Analysis
             st.markdown("### 🔍 Conversation Insights")
             
@@ -1113,7 +986,6 @@ def main():
         st.markdown('<div class="main-container">', unsafe_allow_html=True)
         st.markdown("## ⭐ Favorite Responses")
         
-        # Add current exchange to favorites
         if st.session_state.messages and len(st.session_state.messages) >= 2:
             if st.button("⭐ Save Last Exchange", use_container_width=True):
                 last_user = None
@@ -1162,14 +1034,13 @@ def main():
         
         # Export favorites
         if st.session_state.favorite_responses:
-            if st.button("📥 Export Favorites"):
-                favorites_json = json.dumps(st.session_state.favorite_responses, indent=2)
-                st.download_button(
-                    "📄 Download as JSON",
-                    data=favorites_json,
-                    file_name=f"unichat_favorites_{datetime.now().strftime('%Y%m%d')}.json",
-                    mime="application/json"
-                )
+            favorites_json = json.dumps(st.session_state.favorite_responses, indent=2)
+            st.download_button(
+                "📄 Download Favorites as JSON",
+                data=favorites_json,
+                file_name=f"unichat_favorites_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json"
+            )
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1200,7 +1071,6 @@ def export_conversation():
     }
     
     json_str = json.dumps(export_data, indent=2, default=str)
-    b64 = base64.b64encode(json_str.encode()).decode()
     
     st.download_button(
         "📥 Download Complete Export",
@@ -1221,10 +1091,5 @@ if __name__ == "__main__":
         st.error(f"🚨 Application Error: {str(e)}")
         st.info("Please refresh the page or contact support if the issue persists.")
         
-        # Debug info for development
         if st.checkbox("🔍 Show Debug Info"):
-
             st.exception(e)
-
-
-
