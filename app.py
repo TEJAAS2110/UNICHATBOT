@@ -567,10 +567,11 @@ def handle_voice_input():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown()
+        st.markdown("**Option 1: Upload Audio File**")
         uploaded_audio = st.file_uploader(
-            
+            "Upload your voice recording",
             type=['wav', 'mp3', 'flac', 'm4a', 'ogg'],
+            help="Record on your phone/computer and upload here"
         )
         
         if uploaded_audio is not None:
@@ -605,10 +606,17 @@ def handle_voice_input():
                         st.info("💡 Try uploading a clear WAV or MP3 file")
     
     with col2:
-        st.markdown()
-        st.info()
+        st.markdown("**Option 2: Quick Text Input**")
+        st.info("Or simply type your message in the text box below")
         
-
+        # Instructions for recording
+        st.markdown("""
+        **📱 How to record audio:**
+        1. Use your phone's voice recorder
+        2. Record your message clearly
+        3. Save as MP3/WAV format
+        4. Upload using the button above
+        """)
 # -----------------------------
 # Deployment Status Display
 # -----------------------------
@@ -1162,7 +1170,6 @@ if __name__ == "__main__":
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
-
 
 
 
