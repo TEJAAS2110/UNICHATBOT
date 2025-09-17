@@ -1,0 +1,4 @@
+# System packages for Streamlit Cloud
+# Add this file to enable audio processing if needed
+portaudio19-dev
+python3-pyaudio
