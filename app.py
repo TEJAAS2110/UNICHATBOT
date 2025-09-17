@@ -5,7 +5,7 @@ Author: TEJAS.M.SURVE
 Date: 12/09/2025
 
 This is an original implementation created from scratch during the hackathon.
-Features: Multi-model chat, image generation, vision analysis, voice input, and more!
+Features: Multi-model chat, image generation, vision analysis, voice input, and more!
 """
 
 import streamlit as st
