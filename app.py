@@ -5,7 +5,7 @@ Author: TEJAS.M.SURVE
 Date: 12/09/2025
 
 This is an original implementation created from scratch during the hackathon.
-Features: Multi-model chat, image generation, vision analysis, voice input, and more!
+Features: Multi-model chat, image generation, vision analysis, and more!
 """
 
 import streamlit as st
@@ -31,23 +31,8 @@ from openai import OpenAI
 from PIL import Image
 import requests
 
-# Audio processing - Made optional for deployment
-SPEECH_AVAILABLE = False
-PYAUDIO_AVAILABLE = False
-
-try:
-    import speech_recognition as sr
-    SPEECH_AVAILABLE = True
-    # Check for PyAudio separately
-    try:
-        import pyaudio
-        PYAUDIO_AVAILABLE = True
-    except ImportError:
-        PYAUDIO_AVAILABLE = False
-        # Continue with speech_recognition but without microphone
-except ImportError:
-    SPEECH_AVAILABLE = False
-
+# Text-to-speech (keeping for TTS feature)
+TTS_AVAILABLE = False
 try:
     from gtts import gTTS
     TTS_AVAILABLE = True
@@ -257,27 +242,10 @@ except Exception as e:
     st.error(f"Failed to initialize OpenAI: {e}")
 
 # -----------------------------
-# 🎤 FIXED Voice Input System
+# 🔊 Text-to-Speech Only System
 # -----------------------------
 class VoiceManager:
-    """Handle voice input and text-to-speech"""
-    
-    @staticmethod
-    def speech_to_text():
-        """This method is now handled by file upload"""
-        return "Use file upload for voice input on cloud deployment"
-    
-    @staticmethod
-    def process_audio_file(audio_file_path):
-        """Process uploaded audio file to text"""
-        try:
-            r = sr.Recognizer()
-            with sr.AudioFile(audio_file_path) as source:
-                audio = r.record(source)
-            text = r.recognize_google(audio)
-            return text
-        except Exception as e:
-            return f"❌ Audio processing error: {str(e)}"
+    """Handle text-to-speech only"""
     
     @staticmethod
     def text_to_speech(text):
@@ -292,6 +260,7 @@ class VoiceManager:
         except Exception as e:
             st.error(f"Text-to-speech error: {e}")
             return None
+
 # -----------------------------
 # 🖼️ Enhanced Image Generation
 # -----------------------------
@@ -523,12 +492,9 @@ def initialize_advanced_session():
         "conversation_id": hashlib.md5(str(datetime.now()).encode()).hexdigest()[:8],
         "total_tokens_used": 0,
         "images_generated": 0,
-        "voice_inputs": 0,
         "current_model": "Gemini",
         "theme": "professional",
         "input_key": 0,
-        "captured_voice_text": "",
-        "processing_voice": False,
         "deployment_warnings_shown": False
     }
     
@@ -555,71 +521,6 @@ def display_chat_messages():
             col1, col2, col3 = st.columns([0.1, 4, 1])
             with col2:
                 st.success(f"**{model}** ({timestamp})\n\n{content}")
-
-# -----------------------------
-# Cloud-Compatible Voice Input
-# -----------------------------
-def handle_voice_input():
-    """Handle voice input with cloud-compatible file upload"""
-    st.markdown("### 🎤 Voice Input")
-    
-    # Two options for voice input
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Option 1: Upload Audio File**")
-        uploaded_audio = st.file_uploader(
-            "Upload your voice recording",
-            type=['wav', 'mp3', 'flac', 'm4a', 'ogg'],
-            help="Record on your phone/computer and upload here"
-        )
-        
-        if uploaded_audio is not None:
-            st.audio(uploaded_audio, format='audio/wav')
-            
-            if st.button("🔍 Convert Audio to Text"):
-                with st.spinner("Processing audio..."):
-                    try:
-                        # Save uploaded file temporarily
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-                            tmp_file.write(uploaded_audio.getvalue())
-                            temp_path = tmp_file.name
-                        
-                        # Use speech recognition on uploaded file
-                        r = sr.Recognizer()
-                        with sr.AudioFile(temp_path) as source:
-                            audio = r.record(source)
-                        
-                        text = r.recognize_google(audio)
-                        
-                        if text:
-                            st.session_state.captured_voice_text = text
-                            st.session_state.voice_inputs += 1
-                            st.success(f"✅ Audio converted: {text}")
-                            st.rerun()
-                        
-                        # Clean up temp file
-                        os.unlink(temp_path)
-                        
-                    except Exception as e:
-                        st.error(f"❌ Audio processing error: {str(e)}")
-                        st.info("💡 Try uploading a clear WAV or MP3 file")
-    
-    with col2:
-        st.markdown("**Option 2: Quick Text Input**")
-        st.info("Or simply type your message in the text box below")
-        
-        # Instructions for recording
-        st.markdown("""
-        **📱 How to record audio:**
-        1. Use your phone's voice recorder
-        2. Record your message clearly
-        3. Save as MP3/WAV format
-        4. Upload using the button above
-        """)
-# -----------------------------
-# Deployment Status Display
-# -----------------------------
 
 # -----------------------------
 # 🎯 Main Application
@@ -681,21 +582,14 @@ def main():
         # Quick Actions
         st.markdown("### ⚡ Quick Actions")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            handle_voice_input()
+        if st.button("💾 Export Chat", use_container_width=True):
+            export_conversation()
         
-        with col2:
-            if st.button("💾 Export Chat"):
-                export_conversation()
-        
-        if st.button("🗑️ Clear History", type="secondary"):
+        if st.button("🗑️ Clear History", type="secondary", use_container_width=True):
             st.session_state.messages = []
-            st.session_state.captured_voice_text = ""
             st.session_state.input_key += 1
             st.rerun()
         
-       
         # Usage Statistics
         st.markdown("### 📊 Session Stats")
         
@@ -703,7 +597,7 @@ def main():
         with col1:
             st.metric("Messages", len(st.session_state.messages))
         with col2:
-            st.metric("Voice Inputs", st.session_state.voice_inputs)
+            st.metric("Images", st.session_state.images_generated)
         
         if st.session_state.response_times:
             avg_time = sum(st.session_state.response_times) / len(st.session_state.response_times)
@@ -728,15 +622,10 @@ def main():
         col1, col2, col3 = st.columns([6, 1, 1])
         
         with col1:
-            current_input = ""
-            if st.session_state.captured_voice_text:
-                current_input = st.session_state.captured_voice_text
-            
             user_input = st.text_area(
                 "💭 Your message...",
-                value=current_input,
                 height=100,
-                placeholder="Type your message or use voice input...",
+                placeholder="Type your message here...",
                 key=f"main_chat_input_{st.session_state.input_key}"
             )
         
@@ -789,8 +678,7 @@ def main():
                 else:
                     st.session_state.model_usage[selected_model] = 1
             
-            # Clear input and voice text
-            st.session_state.captured_voice_text = ""
+            # Clear input
             st.session_state.input_key += 1
             st.rerun()
         
@@ -826,7 +714,7 @@ def main():
             enhance_prompt = st.checkbox("✨ Auto-enhance prompt", value=True)
             
         with col2:
-            image_size = st.selectbox("📐 Image Size", ["1024x1024", "1024x1792", "1792x1024"])
+            image_size = st.selectbox("📏 Image Size", ["1024x1024", "1024x1792", "1792x1024"])
             image_quality = st.selectbox("💎 Quality", ["standard", "hd"])
             
             if st.button("🎨 Generate Image", use_container_width=True):
@@ -1019,7 +907,7 @@ def main():
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("**📝 Message Distribution**")
+                st.markdown("**📊 Message Distribution**")
                 st.write(f"- User messages: {analytics['user_messages']}")
                 st.write(f"- AI responses: {analytics['ai_messages']}")
                 st.write(f"- Average length: {analytics['avg_message_length']:.0f} chars")
@@ -1041,7 +929,6 @@ def main():
                 
                 st.markdown("**📊 Session Statistics**")
                 st.write(f"- Images generated: {st.session_state.images_generated}")
-                st.write(f"- Voice inputs: {st.session_state.voice_inputs}")
                 st.write(f"- Conversation ID: {st.session_state.conversation_id}")
         
         else:
@@ -1132,8 +1019,7 @@ def export_conversation():
         "statistics": {
             "model_usage": st.session_state.model_usage,
             "response_times": st.session_state.response_times,
-            "images_generated": st.session_state.images_generated,
-            "voice_inputs": st.session_state.voice_inputs
+            "images_generated": st.session_state.images_generated
         },
         "favorites": st.session_state.favorite_responses
     }
@@ -1163,13 +1049,9 @@ if __name__ == "__main__":
         st.markdown("""
         ### 🛠️ Troubleshooting Tips:
         1. **API Keys**: Make sure your API keys are properly configured
-        2. **Voice Features**: Work best in local environment
-        3. **Image Generation**: Requires OpenAI API key
-        4. **Refresh**: Try refreshing the page if issues persist
+        2. **Image Generation**: Requires OpenAI API key
+        3. **Refresh**: Try refreshing the page if issues persist
         """)
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
-
-
-
