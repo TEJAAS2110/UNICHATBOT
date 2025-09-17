@@ -575,7 +575,7 @@ def display_chat_messages():
 # -----------------------------
 def handle_cloud_voice_input():
     """Handle voice input with cloud deployment compatibility"""
-    audio_status = CloudVoiceManager.get_audio_status()
+    audio_status = VoiceManager.get_audio_status()
     
     # Voice input button with status indication
     if audio_status["pyaudio"]:
@@ -598,7 +598,7 @@ def handle_cloud_voice_input():
         
         try:
             with st.spinner("🎤 Processing voice input..."):
-                text = CloudVoiceManager.speech_to_text()
+                text = VoiceManager.speech_to_text()
                 
             if text and not text.startswith("❌") and not text.startswith("⏱️"):
                 st.session_state.captured_voice_text = text
@@ -617,7 +617,7 @@ def handle_cloud_voice_input():
 def show_deployment_status():
     """Show current deployment status and capabilities"""
     if not st.session_state.deployment_warnings_shown:
-        audio_status = CloudVoiceManager.get_audio_status()
+        audio_status = VoiceManager.get_audio_status()
         
         # Show deployment notice
         status_items = []
@@ -714,7 +714,7 @@ def main():
             st.rerun()
         
         # Audio Status
-        audio_status = CloudVoiceManager.get_audio_status()
+        audio_status = VoiceManager.get_audio_status()
         st.markdown("### 🎵 Audio Status")
         st.write(f"🎤 Speech Recognition: {'✅' if audio_status['speech_recognition'] else '❌'}")
         st.write(f"🔊 Text-to-Speech: {'✅' if audio_status['tts'] else '❌'}")
@@ -823,7 +823,7 @@ def main():
             last_message = st.session_state.messages[-1]
             if last_message["role"] == "assistant":
                 with st.spinner("🔊 Generating speech..."):
-                    audio_file = CloudVoiceManager.text_to_speech(last_message["content"])
+                    audio_file = VoiceManager.text_to_speech(last_message["content"])
                     if audio_file:
                         with open(audio_file, 'rb') as f:
                             st.audio(f.read(), format='audio/mp3')
@@ -1194,5 +1194,6 @@ if __name__ == "__main__":
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
+
 
 
