@@ -1,14 +1,11 @@
 """
-UniChat - Next-Gen Multi-Model AI Assistant (DEPLOYMENT READY VERSION)
+UniChat - Next-Gen Multi-Model AI Assistant
 Created for: Next-Gen Multi-Model AI Chatbot Hackathon (GEA-6)
 Author: TEJAS.M.SURVE
+Date: 12/09/2025
 
-DEPLOYMENT FIXES APPLIED:
-✅ PyAudio made optional for cloud deployment
-✅ Microphone detection with fallback
-✅ Enhanced error handling for missing dependencies
-✅ Cloud-compatible audio processing
-✅ All deployment issues resolved
+This is an original implementation created from scratch during the hackathon.
+Features: Multi-model chat, image generation, vision analysis, voice input, and more!
 """
 
 import streamlit as st
@@ -1204,3 +1201,4 @@ if __name__ == "__main__":
         
         if st.checkbox("🔍 Show Debug Info"):
             st.exception(e)
+
