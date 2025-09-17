@@ -11,5 +11,4 @@ pandas
 numpy
 plotly
 httpx
-PyAudio>=0.2.11
-
+PyAudio
